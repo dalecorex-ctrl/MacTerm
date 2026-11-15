@@ -1,0 +1,66 @@
+@import "tailwindcss";
+@import "@xterm/xterm/css/xterm.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  }
+}
+
+.font-terminal {
+  font-family: "JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas, monospace;
+  font-variant-ligatures: normal;
+}
+
+/* Ensure xterm viewport fills container cleanly without double scrollbars */
+.xterm {
+  height: 100%;
+  width: 100%;
+  padding: 2px 0;
+  -webkit-touch-callout: none;
+}
+
+.xterm-touch-surface {
+  -webkit-touch-callout: none;
+  touch-action: pan-y;
+}
+
+.xterm-viewport {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+.xterm-viewport::-webkit-scrollbar {
+  width: 7px;
+}
+
+.xterm-viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.xterm-viewport::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+}
+
+.xterm-viewport::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.35);
+}
+
+/* Light profile scrollbar compensation */
+.terminal-light .xterm-viewport::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.terminal-light .xterm-viewport::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.35);
+}

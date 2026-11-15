@@ -1,0 +1,6 @@
+{
+  "name": "macOS Terminal",
+  "description": "Local macOS-styled terminal runtime with a POSIX shell, TTY subsystem, Homebrew package manager, agentic coding CLI, and full ANSI/VT100 TUI applications.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
