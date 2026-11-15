@@ -357,7 +357,7 @@ export default function App() {
         />
       ))}
 
-      {!isAndroidApp && <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/20" />}
+      {!isAndroidApp && <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-sky-950/5" />}
 
       {isAndroidApp ? (
         <header className="relative z-30 flex h-12 shrink-0 items-center justify-between border-b border-white/10 bg-[#072a31] px-3 text-slate-100">

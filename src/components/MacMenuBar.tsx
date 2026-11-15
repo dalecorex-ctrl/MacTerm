@@ -118,7 +118,7 @@ export function MacMenuBar({
   return (
     <header
       ref={barRef}
-      className="relative z-40 flex h-7 w-full shrink-0 items-center justify-between border-b border-white/10 bg-black/45 px-3 text-[13px] font-medium text-white/95 backdrop-blur-2xl"
+      className="relative z-40 flex h-7 w-full shrink-0 items-center justify-between border-b border-white/70 bg-gradient-to-b from-white/95 via-[#edf4fc]/95 to-[#d9e5f2]/95 px-3 text-[13px] font-medium text-[#172b43] shadow-[0_1px_2px_rgba(36,65,98,0.25)] backdrop-blur-xl"
     >
       <div className="flex items-center gap-0.5">
         {/* Minimal macOS geometric apple mark */}
@@ -145,14 +145,14 @@ export function MacMenuBar({
                   if (openMenu !== null && openMenu !== name) setOpenMenu(name);
                 }}
                 className={`h-6 whitespace-nowrap shrink-0 rounded px-2.5 text-[13px] transition-colors ${
-                  isAppTitle ? 'font-bold' : 'font-normal text-white/90'
-                } ${isOpen ? 'bg-white/20 text-white' : 'hover:bg-white/12'}`}
+                  isAppTitle ? 'font-bold text-[#173a63]' : 'font-normal text-[#263d59]'
+                } ${isOpen ? 'bg-[#b8cce4] text-[#132b48]' : 'hover:bg-[#cbd9ea]'}`}
               >
                 {name}
               </button>
 
               {isOpen && (
-                <div className="absolute left-0 top-[26px] z-50 min-w-[232px] rounded-lg border border-white/15 bg-[#1d2028]/95 p-1 shadow-2xl backdrop-blur-2xl">
+                <div className="absolute left-0 top-[26px] z-50 min-w-[232px] rounded-md border border-[#9eb5d0] bg-gradient-to-b from-white/98 to-[#e8f0fa]/98 p-1 shadow-[0_8px_24px_rgba(15,39,69,0.28)] backdrop-blur-xl">
                   {menus[name].map((item, idx) =>
                     item.divider ? (
                       <div key={`div-${idx}`} className="my-1 h-px bg-white/10" />
@@ -165,7 +165,7 @@ export function MacMenuBar({
                           setOpenMenu(null);
                           item.action?.();
                         }}
-                        className="flex w-full items-center justify-between gap-6 rounded-md px-2.5 py-1 text-left text-[12.5px] text-white/90 transition-colors hover:bg-sky-600 hover:text-white disabled:opacity-40"
+                        className="flex w-full items-center justify-between gap-6 rounded px-2.5 py-1 text-left text-[12.5px] text-[#20334b] transition-colors hover:bg-[#3875bd] hover:text-white disabled:opacity-40"
                       >
                         <span className="whitespace-nowrap">{item.label}</span>
                         {item.shortcut && (
@@ -234,7 +234,7 @@ export function MacMenuBar({
           <span className="hidden sm:inline">Settings</span>
         </button>
 
-        <span className="pl-1.5 text-[12.5px] font-medium tabular-nums text-white/90 whitespace-nowrap">
+        <span className="pl-1.5 text-[12.5px] font-medium tabular-nums text-[#243c58] whitespace-nowrap">
           {clockText}
         </span>
       </div>

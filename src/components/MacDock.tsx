@@ -70,7 +70,7 @@ export function MacDock({
     <div className="pointer-events-none fixed inset-x-0 bottom-3 z-30 flex justify-center px-4">
       <nav
         aria-label="macOS Dock"
-        className="pointer-events-auto flex items-center gap-2 rounded-2xl border border-white/15 bg-black/45 px-2.5 py-1.5 shadow-[0_18px_45px_rgba(0,0,0,0.65)] backdrop-blur-2xl"
+        className="aqua-dock pointer-events-auto flex items-center gap-2 rounded-[18px] px-2.5 py-1.5 backdrop-blur-xl"
       >
         {items.map((item) => {
           const Icon = item.icon;
