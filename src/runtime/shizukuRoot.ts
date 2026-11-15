@@ -9,6 +9,9 @@ declare global {
       isRootAvailable?: () => boolean;
       isShizukuAvailable?: () => boolean;
       execPrivilegedCommand?: (cmd: string, mode: string) => string;
+      pickHomeDirectory?: () => void;
+      getHomeDirectoryName?: () => string;
+      getHomeDirectorySnapshot?: () => string;
     };
   }
 }

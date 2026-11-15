@@ -149,10 +149,10 @@ async function startServer() {
   });
 
   // Dedicated Android APK download route with strict package-archive MIME type
-  app.get('/app-debug.apk', (_req, res) => {
+  app.get('/MacTerm.apk', (_req, res) => {
     const candidates = [
-      path.resolve(process.cwd(), 'public', 'app-debug.apk'),
-      path.resolve(process.cwd(), 'dist', 'app-debug.apk'),
+      path.resolve(process.cwd(), 'public', 'MacTerm.apk'),
+      path.resolve(process.cwd(), 'dist', 'MacTerm.apk'),
       path.resolve(process.cwd(), 'android', 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk'),
     ];
     const found = candidates.find((p) => fs.existsSync(p));
@@ -161,14 +161,14 @@ async function startServer() {
       return;
     }
     res.setHeader('Content-Type', 'application/vnd.android.package-archive');
-    res.setHeader('Content-Disposition', 'attachment; filename="pogs-mac-terminal-debug.apk"');
+    res.setHeader('Content-Disposition', 'attachment; filename="MacTerm.apk"');
     res.sendFile(found);
   });
 
   // Query APK status and metadata
   app.get('/api/apk/status', (_req, res) => {
     const metaPath = path.resolve(process.cwd(), 'public', 'apk-metadata.json');
-    const apkPath = path.resolve(process.cwd(), 'public', 'app-debug.apk');
+    const apkPath = path.resolve(process.cwd(), 'public', 'MacTerm.apk');
     if (!fs.existsSync(apkPath)) {
       res.json({ exists: false });
       return;
@@ -190,7 +190,7 @@ async function startServer() {
       packageName: 'com.pogsmac.terminal',
       appName: 'Pogs Terminal macOS',
       version: '1.0.0',
-      downloadUrl: '/app-debug.apk',
+      downloadUrl: '/MacTerm.apk',
       ...meta,
     });
   });

@@ -5,7 +5,7 @@ const distDir = path.resolve('dist');
 const targetDir = path.resolve('android/app/src/main/assets/public');
 
 // The web download of the APK must not be packaged inside the APK itself.
-const EXCLUDED = new Set(['app-debug.apk', 'apk-metadata.json']);
+const EXCLUDED = new Set(['MacTerm.apk', 'app-debug.apk', 'apk-metadata.json']);
 
 if (!fs.existsSync(distDir)) {
   console.error('dist/ directory not found. Run `npm run build` first.');

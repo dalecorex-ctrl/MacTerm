@@ -522,6 +522,44 @@ class VirtualFileSystem {
     this.rm(`/usr/local/bin/${name}`, false);
   }
 
+  public importHomeSnapshot(snapshot: unknown): { files: number; dirs: number } {
+    if (!snapshot || typeof snapshot !== 'object') return { files: 0, dirs: 0 };
+    const root = snapshot as { children?: unknown[] };
+    const home = this.getNode('/Users/pogs');
+    if (!home || home.type !== 'dir' || !home.children || !Array.isArray(root.children)) {
+      return { files: 0, dirs: 0 };
+    }
+
+    let files = 0;
+    let dirs = 0;
+    const merge = (parent: VfsNode, entries: unknown[], depth: number) => {
+      if (depth > 12) return;
+      for (const raw of entries) {
+        if (!raw || typeof raw !== 'object') continue;
+        const entry = raw as { name?: unknown; type?: unknown; content?: unknown; children?: unknown };
+        if (typeof entry.name !== 'string' || !entry.name || entry.name === '.' || entry.name === '..' || entry.name.includes('/')) continue;
+        if (!parent.children) parent.children = {};
+        if (entry.type === 'dir' && Array.isArray(entry.children)) {
+          let node = parent.children[entry.name];
+          if (!node || node.type !== 'dir') {
+            node = makeDir(entry.name);
+            parent.children[entry.name] = node;
+          }
+          dirs++;
+          merge(node, entry.children, depth + 1);
+        } else if (entry.type === 'file' && typeof entry.content === 'string') {
+          parent.children[entry.name] = makeFile(entry.name, entry.content);
+          files++;
+        }
+      }
+    };
+
+    merge(home, root.children, 0);
+    home.mtime = Date.now();
+    this.save();
+    return { files, dirs };
+  }
+
   public getStats(): { files: number; dirs: number; bytes: number } {
     let files = 0;
     let dirs = 0;

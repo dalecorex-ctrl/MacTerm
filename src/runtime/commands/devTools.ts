@@ -615,7 +615,7 @@ export const devToolsCommands: Record<string, CommandHandler> = {
     if (sub === 'help' || sub === '--help' || sub === '-h') {
       writeStdout(`${ANSI.bold}Pogs macOS Android APK Manager${ANSI.reset}\n`);
       writeStdout(`  apk info          Display current debug APK package status & signatures\n`);
-      writeStdout(`  apk download      Trigger direct browser download of app-debug.apk\n`);
+      writeStdout(`  apk download      Trigger direct browser download of MacTerm.apk\n`);
       writeStdout(`  apk build         Show how to build the Android APK\n`);
       writeStdout(`  apk adb           Show ADB sideload command\n`);
       writeStdout(`  apk run           Print Android intent launcher command\n`);
@@ -625,12 +625,12 @@ export const devToolsCommands: Record<string, CommandHandler> = {
       writeStdout(`Triggering Android Debug APK download in browser...\n`);
       try {
         const a = document.createElement('a');
-        a.href = '/app-debug.apk';
-        a.download = 'pogs-mac-terminal-debug.apk';
+        a.href = '/MacTerm.apk';
+        a.download = 'MacTerm.apk';
         document.body.appendChild(a);
         a.click();
         a.remove();
-        writeStdout(`${ANSI.green}✔ Download started: /app-debug.apk${ANSI.reset}\n`);
+        writeStdout(`${ANSI.green}✔ Download started: /MacTerm.apk${ANSI.reset}\n`);
         return 0;
       } catch (e) {
         writeStderr(`Download failed: ${(e as Error).message}\n`);
@@ -641,7 +641,7 @@ export const devToolsCommands: Record<string, CommandHandler> = {
       writeStdout(`${ANSI.bold}ADB Installation Instructions:${ANSI.reset}\n`);
       writeStdout(`1. Connect device via USB / Wi-Fi debugging (adb devices)\n`);
       writeStdout(`2. Sideload APK directly:\n`);
-      writeStdout(`   ${ANSI.cyan}adb install -r android/app/build/outputs/apk/debug/app-debug.apk${ANSI.reset}\n`);
+      writeStdout(`   ${ANSI.cyan}adb install -r MacTerm.apk${ANSI.reset}\n`);
       writeStdout(`3. Launch MainActivity:\n`);
       writeStdout(`   ${ANSI.cyan}adb shell am start -n com.pogsmac.terminal/.MainActivity${ANSI.reset}\n`);
       return 0;
@@ -662,7 +662,7 @@ export const devToolsCommands: Record<string, CommandHandler> = {
       writeStdout(`  Package:     ${ANSI.cyan}${data.packageName || 'com.pogsmac.terminal'}${ANSI.reset}\n`);
       writeStdout(`  App Name:    Pogs Terminal macOS\n`);
       writeStdout(`  Version:     1.0.0 (Android 8.0+)\n`);
-      writeStdout(`  Binary:      app-debug.apk\n`);
+      writeStdout(`  Binary:      MacTerm.apk\n`);
       writeStdout(`  Status:      ${data.exists ? `${ANSI.green}✔ Compiled & Signed${ANSI.reset}` : `${ANSI.yellow}Not built yet${ANSI.reset}`}\n`);
       if (data.exists) {
         writeStdout(`  Size:        ${data.sizeFormatted}\n`);

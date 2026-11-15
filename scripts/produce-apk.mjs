@@ -42,11 +42,11 @@ function publish(apkPath) {
   }
 
   fs.mkdirSync(publicDir, { recursive: true });
-  fs.copyFileSync(apkPath, path.join(publicDir, 'app-debug.apk'));
+  fs.copyFileSync(apkPath, path.join(publicDir, 'MacTerm.apk'));
 
   const { size } = fs.statSync(apkPath);
   const metadata = {
-    filename: 'app-debug.apk',
+    filename: 'MacTerm.apk',
     packageName: 'com.pogsmac.terminal',
     appName: 'Pogs Terminal macOS',
     version: readVersionName(),
@@ -56,7 +56,7 @@ function publish(apkPath) {
   };
   fs.writeFileSync(path.join(publicDir, 'apk-metadata.json'), `${JSON.stringify(metadata, null, 2)}\n`);
 
-  console.log(`Published ${apkPath} -> public/app-debug.apk (${metadata.sizeFormatted})`);
+  console.log(`Published ${apkPath} -> public/MacTerm.apk (${metadata.sizeFormatted})`);
 }
 
 const fromIndex = process.argv.indexOf('--from');
