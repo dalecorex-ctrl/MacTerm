@@ -145,6 +145,7 @@ export function AndroidApkModal({
                 </h3>
                 <p className="text-slate-300 text-[11.5px] max-w-md">
                   Debug-signed build produced by Gradle. Ready to sideload on Android 8.0 or newer.
+                  The APK is cached for offline download after the app has been opened online once.
                 </p>
                 <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] text-slate-400 font-mono">
                   <span>Package: <strong className="text-cyan-300 font-medium">com.pogsmac.terminal</strong></span>
