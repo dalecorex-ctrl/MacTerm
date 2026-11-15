@@ -3,13 +3,7 @@
   "packageName": "com.pogsmac.terminal",
   "appName": "Pogs Terminal macOS",
   "version": "1.0.0",
-  "buildTimestamp": "2026-11-14T17:30:25.315Z",
-  "sizeBytes": 2832795,
-  "sizeFormatted": "2.70 MB (2766.4 KB)",
-  "signatures": [
-    "v1",
-    "v2",
-    "v3"
-  ],
-  "verified": true
+  "buildTimestamp": "2026-11-15T04:23:14.742Z",
+  "sizeBytes": 4404473,
+  "sizeFormatted": "4.20 MB (4301.2 KB)"
 }
