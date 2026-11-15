@@ -176,13 +176,13 @@ export function TerminalPane({
     const profile = getProfileById(settings.profileId, settings.customTheme);
     const term = new Terminal({
       allowProposedApi: true,
-      allowTransparency: true,
+      allowTransparency: !window.AndroidBridge,
       fontFamily: settings.terminalFontFamily || '"JetBrains Mono", "SF Mono", Menlo, Monaco, monospace',
       fontSize: settings.fontSize,
       lineHeight: 1.24,
       cursorStyle: settings.cursorStyle,
       cursorBlink: settings.cursorBlink,
-      scrollback: 5000,
+      scrollback: window.AndroidBridge ? 1500 : 5000,
       theme: profile.xterm,
       macOptionIsMeta: true,
     });

@@ -12,6 +12,12 @@ declare global {
       pickHomeDirectory?: () => void;
       getHomeDirectoryName?: () => string;
       getHomeDirectorySnapshot?: () => string;
+      getLocalHomePath?: () => string;
+      resolveLocalDirectory?: (path: string, currentDirectory: string) => string;
+      startLocalShell?: (sessionId: string, cwd: string, envJson: string, columns: number, rows: number) => void;
+      writeLocalShellInput?: (sessionId: string, text: string) => void;
+      resizeLocalShell?: (sessionId: string, columns: number, rows: number) => void;
+      stopLocalShell?: (sessionId: string) => void;
     };
   }
 }
