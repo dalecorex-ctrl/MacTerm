@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { RotateCcw, Volume2, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { FolderOpen, RotateCcw, Volume2, X } from 'lucide-react';
 import type { CursorStyle, TerminalSettings, TouchBarMode } from '../types/ui';
 import { TERMINAL_PROFILES } from '../runtime/themes';
 import { vfs } from '../runtime/vfs';
@@ -16,10 +16,37 @@ interface SettingsModalProps {
 
 export function SettingsModal({ isOpen, settings, onUpdate, onClose }: SettingsModalProps) {
   const [confirmReset, setConfirmReset] = useState(false);
+  const [homeFolderStatus, setHomeFolderStatus] = useState('');
   const [customBg, setCustomBg] = useState(settings.customTheme?.background ?? '#141b22');
   const [customFg, setCustomFg] = useState(settings.customTheme?.foreground ?? '#e2eff3');
   const [customCursor, setCustomCursor] = useState(settings.customTheme?.cursor ?? '#56d4dd');
   const [customAccent, setCustomAccent] = useState(settings.customTheme?.accent ?? '#3b82f6');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const bridge = window.AndroidBridge;
+    if (bridge?.getHomeDirectoryName) {
+      const folderName = bridge.getHomeDirectoryName();
+      if (folderName) setHomeFolderStatus(`Selected: ${folderName}`);
+    }
+
+    const importSelectedFolder = () => {
+      const snapshotText = window.AndroidBridge?.getHomeDirectorySnapshot?.();
+      if (!snapshotText) {
+        setHomeFolderStatus('Could not read the selected folder. Choose it again.');
+        return;
+      }
+      try {
+        const result = vfs.importHomeSnapshot(JSON.parse(snapshotText));
+        setHomeFolderStatus(`Imported ${result.files} text files and ${result.dirs} folders into ~. Re-import to refresh.`);
+      } catch {
+        setHomeFolderStatus('Could not import this folder. Try a smaller folder.');
+      }
+    };
+
+    window.addEventListener('macterm-home-folder-selected', importSelectedFolder);
+    return () => window.removeEventListener('macterm-home-folder-selected', importSelectedFolder);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -543,6 +570,33 @@ export function SettingsModal({ isOpen, settings, onUpdate, onClose }: SettingsM
           </section>
 
           <div className="h-px bg-white/10" />
+
+          <section className="space-y-3 rounded-xl border border-sky-500/20 bg-sky-950/15 p-4">
+            <div className="space-y-1">
+              <h3 className="text-xs font-semibold text-slate-200">Android Home Folder</h3>
+              <p className="text-xs leading-relaxed text-slate-400">
+                Choose a folder you own. MacTerm imports up to 2 MB of text files into <code className="text-sky-300">~</code>; binary files are skipped. Android only grants access to the folder you select. This is a local snapshot, so re-import to refresh it.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.AndroidBridge?.pickHomeDirectory) {
+                    window.AndroidBridge.pickHomeDirectory();
+                    setHomeFolderStatus('Choose a folder in Android’s picker…');
+                  } else {
+                    setHomeFolderStatus('Folder access is available in the MacTerm Android APK.');
+                  }
+                }}
+                className="flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-sky-500"
+              >
+                <FolderOpen className="h-3.5 w-3.5" />
+                Choose folder and import
+              </button>
+              {homeFolderStatus && <span aria-live="polite" className="text-[11px] text-slate-300">{homeFolderStatus}</span>}
+            </div>
+          </section>
 
           {/* Local Runtime Storage */}
           <section className="flex flex-wrap items-center justify-between gap-4">

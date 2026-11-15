@@ -1,18 +1,5 @@
 export type PrivilegeLevel = 'user' | 'shizuku' | 'root';
 
-declare global {
-  interface Window {
-    AndroidBridge?: {
-      copyText?: (text: string) => void;
-      hapticTap?: () => void;
-      hapticFeedback?: (kind: string) => void;
-      isRootAvailable?: () => boolean;
-      isShizukuAvailable?: () => boolean;
-      execPrivilegedCommand?: (cmd: string, mode: string) => string;
-    };
-  }
-}
-
 class ShizukuRootController {
   private level: PrivilegeLevel = 'user';
   private listeners = new Set<(level: PrivilegeLevel) => void>();

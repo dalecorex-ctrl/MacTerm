@@ -1,15 +1,9 @@
 {
-  "filename": "app-debug.apk",
+  "filename": "MacTerm.apk",
   "packageName": "com.pogsmac.terminal",
   "appName": "Pogs Terminal macOS",
   "version": "1.0.0",
-  "buildTimestamp": "2026-11-14T17:30:25.315Z",
-  "sizeBytes": 2832795,
-  "sizeFormatted": "2.70 MB (2766.4 KB)",
-  "signatures": [
-    "v1",
-    "v2",
-    "v3"
-  ],
-  "verified": true
+  "buildTimestamp": "2026-11-15T04:44:42.486Z",
+  "sizeBytes": 4411241,
+  "sizeFormatted": "4.21 MB (4307.9 KB)"
 }

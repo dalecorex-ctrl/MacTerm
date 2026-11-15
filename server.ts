@@ -2,12 +2,8 @@ import 'dotenv/config';
 import express from 'express';
 import path from 'node:path';
 import fs from 'node:fs';
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
-
-const execAsync = promisify(exec);
 
 const PORT = Number(process.env.PORT || 3000);
 const isProd = process.env.NODE_ENV === 'production';
@@ -153,26 +149,26 @@ async function startServer() {
   });
 
   // Dedicated Android APK download route with strict package-archive MIME type
-  app.get('/app-debug.apk', (_req, res) => {
+  app.get('/MacTerm.apk', (_req, res) => {
     const candidates = [
-      path.resolve(process.cwd(), 'public', 'app-debug.apk'),
-      path.resolve(process.cwd(), 'dist', 'app-debug.apk'),
+      path.resolve(process.cwd(), 'public', 'MacTerm.apk'),
+      path.resolve(process.cwd(), 'dist', 'MacTerm.apk'),
       path.resolve(process.cwd(), 'android', 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk'),
     ];
     const found = candidates.find((p) => fs.existsSync(p));
     if (!found) {
-      res.status(404).send('APK has not been built yet. Click "Build Debug APK" in the APK manager.');
+      res.status(404).send('APK has not been built yet. Run `npm run build:apk` or the "Build Android APK" GitHub workflow.');
       return;
     }
     res.setHeader('Content-Type', 'application/vnd.android.package-archive');
-    res.setHeader('Content-Disposition', 'attachment; filename="pogs-mac-terminal-debug.apk"');
+    res.setHeader('Content-Disposition', 'attachment; filename="MacTerm.apk"');
     res.sendFile(found);
   });
 
   // Query APK status and metadata
   app.get('/api/apk/status', (_req, res) => {
     const metaPath = path.resolve(process.cwd(), 'public', 'apk-metadata.json');
-    const apkPath = path.resolve(process.cwd(), 'public', 'app-debug.apk');
+    const apkPath = path.resolve(process.cwd(), 'public', 'MacTerm.apk');
     if (!fs.existsSync(apkPath)) {
       res.json({ exists: false });
       return;
@@ -194,37 +190,9 @@ async function startServer() {
       packageName: 'com.pogsmac.terminal',
       appName: 'Pogs Terminal macOS',
       version: '1.0.0',
-      signatures: ['v1', 'v2', 'v3'],
-      verified: true,
-      downloadUrl: '/app-debug.apk',
+      downloadUrl: '/MacTerm.apk',
       ...meta,
     });
-  });
-
-  // Trigger server-side APK compilation & signing
-  app.post('/api/apk/build', async (_req, res) => {
-    try {
-      const { stdout, stderr } = await execAsync('node scripts/produce-apk.mjs', {
-        cwd: process.cwd(),
-      });
-      const metaPath = path.resolve(process.cwd(), 'public', 'apk-metadata.json');
-      let meta = {};
-      if (fs.existsSync(metaPath)) {
-        try {
-          meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
-        } catch {
-          // ignore
-        }
-      }
-      res.json({
-        ok: true,
-        log: `${stdout}\n${stderr}`.trim(),
-        metadata: meta,
-      });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      res.status(500).json({ ok: false, error: msg });
-    }
   });
 
   if (!isProd) {

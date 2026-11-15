@@ -1,4 +1,7 @@
 node_modules/
+android/app/src/main/assets/public/
+android/.gradle/
+android/local.properties
 build/
 dist/
 coverage/
@@ -6,3 +9,4 @@ coverage/
 *.log
 .env*
 !.env.example
+dev-dist/

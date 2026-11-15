@@ -4,11 +4,21 @@ declare global {
   interface Window {
     AndroidBridge?: {
       copyText?: (text: string) => void;
+      readClipboardText?: () => string;
       hapticTap?: () => void;
       hapticFeedback?: (kind: string) => void;
       isRootAvailable?: () => boolean;
       isShizukuAvailable?: () => boolean;
       execPrivilegedCommand?: (cmd: string, mode: string) => string;
+      pickHomeDirectory?: () => void;
+      getHomeDirectoryName?: () => string;
+      getHomeDirectorySnapshot?: () => string;
+      getLocalHomePath?: () => string;
+      resolveLocalDirectory?: (path: string, currentDirectory: string) => string;
+      startLocalShell?: (sessionId: string, cwd: string, envJson: string, columns: number, rows: number) => void;
+      writeLocalShellInput?: (sessionId: string, text: string) => void;
+      resizeLocalShell?: (sessionId: string, columns: number, rows: number) => void;
+      stopLocalShell?: (sessionId: string) => void;
     };
   }
 }

@@ -615,8 +615,8 @@ export const devToolsCommands: Record<string, CommandHandler> = {
     if (sub === 'help' || sub === '--help' || sub === '-h') {
       writeStdout(`${ANSI.bold}Pogs macOS Android APK Manager${ANSI.reset}\n`);
       writeStdout(`  apk info          Display current debug APK package status & signatures\n`);
-      writeStdout(`  apk download      Trigger direct browser download of app-debug.apk\n`);
-      writeStdout(`  apk build         Recompile & sign Android APK (native toolchain)\n`);
+      writeStdout(`  apk download      Trigger direct browser download of MacTerm.apk\n`);
+      writeStdout(`  apk build         Show how to build the Android APK\n`);
       writeStdout(`  apk adb           Show ADB sideload command\n`);
       writeStdout(`  apk run           Print Android intent launcher command\n`);
       return 0;
@@ -625,12 +625,12 @@ export const devToolsCommands: Record<string, CommandHandler> = {
       writeStdout(`Triggering Android Debug APK download in browser...\n`);
       try {
         const a = document.createElement('a');
-        a.href = '/app-debug.apk';
-        a.download = 'pogs-mac-terminal-debug.apk';
+        a.href = '/MacTerm.apk';
+        a.download = 'MacTerm.apk';
         document.body.appendChild(a);
         a.click();
         a.remove();
-        writeStdout(`${ANSI.green}✔ Download started: /app-debug.apk${ANSI.reset}\n`);
+        writeStdout(`${ANSI.green}✔ Download started: /MacTerm.apk${ANSI.reset}\n`);
         return 0;
       } catch (e) {
         writeStderr(`Download failed: ${(e as Error).message}\n`);
@@ -641,34 +641,17 @@ export const devToolsCommands: Record<string, CommandHandler> = {
       writeStdout(`${ANSI.bold}ADB Installation Instructions:${ANSI.reset}\n`);
       writeStdout(`1. Connect device via USB / Wi-Fi debugging (adb devices)\n`);
       writeStdout(`2. Sideload APK directly:\n`);
-      writeStdout(`   ${ANSI.cyan}adb install -r android/app/build/outputs/apk/debug/app-debug.apk${ANSI.reset}\n`);
+      writeStdout(`   ${ANSI.cyan}adb install -r MacTerm.apk${ANSI.reset}\n`);
       writeStdout(`3. Launch MainActivity:\n`);
       writeStdout(`   ${ANSI.cyan}adb shell am start -n com.pogsmac.terminal/.MainActivity${ANSI.reset}\n`);
       return 0;
     }
     if (sub === 'build' || sub === 'produce') {
-      writeStdout(`${ANSI.bold}${ANSI.cyan}==> Building Android Debug APK with native toolchain...${ANSI.reset}\n`);
-      try {
-        const res = await fetch('/api/apk/build', { method: 'POST' });
-        const data = await res.json();
-        if (data.ok) {
-          writeStdout(`${ANSI.green}✔ APK build succeeded!${ANSI.reset}\n`);
-          if (data.metadata?.sizeFormatted) {
-            writeStdout(`  Size:       ${data.metadata.sizeFormatted}\n`);
-            writeStdout(`  Package:    ${data.metadata.packageName}\n`);
-            writeStdout(`  Signatures: ${data.metadata.signatures?.join(', ')} (verified)\n`);
-          }
-          writeStdout(`  File:       /app-debug.apk\n`);
-          writeStdout(`${ANSI.dim}Run ${ANSI.reset}${ANSI.cyan}apk download${ANSI.reset}${ANSI.dim} to download the new APK.${ANSI.reset}\n`);
-          return 0;
-        } else {
-          writeStderr(`APK build failed: ${data.error || 'Unknown error'}\n`);
-          return 1;
-        }
-      } catch (e) {
-        writeStderr(`Build request failed: ${(e as Error).message}\n`);
-        return 1;
-      }
+      writeStdout(`${ANSI.bold}Building the Android APK${ANSI.reset}\n`);
+      writeStdout(`The APK is built with Gradle, outside this terminal:\n`);
+      writeStdout(`  ${ANSI.cyan}npm run build:apk${ANSI.reset}          on a machine with JDK 17, Gradle and the Android SDK\n`);
+      writeStdout(`  ${ANSI.cyan}Build Android APK${ANSI.reset}          GitHub Actions workflow (uploads the APK as an artifact)\n`);
+      return 0;
     }
 
     // Default: info
@@ -678,14 +661,14 @@ export const devToolsCommands: Record<string, CommandHandler> = {
       writeStdout(`${ANSI.bold}Android Native Debug APK Status${ANSI.reset}\n`);
       writeStdout(`  Package:     ${ANSI.cyan}${data.packageName || 'com.pogsmac.terminal'}${ANSI.reset}\n`);
       writeStdout(`  App Name:    Pogs Terminal macOS\n`);
-      writeStdout(`  Version:     1.0.0 (API 23-35 compatible)\n`);
-      writeStdout(`  Binary:      app-debug.apk\n`);
+      writeStdout(`  Version:     1.0.0 (Android 8.0+)\n`);
+      writeStdout(`  Binary:      MacTerm.apk\n`);
       writeStdout(`  Status:      ${data.exists ? `${ANSI.green}✔ Compiled & Signed${ANSI.reset}` : `${ANSI.yellow}Not built yet${ANSI.reset}`}\n`);
       if (data.exists) {
         writeStdout(`  Size:        ${data.sizeFormatted}\n`);
-        writeStdout(`  Signatures:  ${ANSI.green}v1, v2, v3 (verified)${ANSI.reset}\n`);
+        writeStdout(`  Signing:     debug key\n`);
         writeStdout(`  Updated:     ${data.mtime ? new Date(data.mtime).toLocaleString() : 'recent'}\n`);
-        writeStdout(`\n${ANSI.dim}Run ${ANSI.reset}${ANSI.cyan}apk download${ANSI.reset}${ANSI.dim} to download, or ${ANSI.reset}${ANSI.cyan}apk build${ANSI.reset}${ANSI.dim} to recompile.${ANSI.reset}\n`);
+        writeStdout(`\n${ANSI.dim}Run ${ANSI.reset}${ANSI.cyan}apk download${ANSI.reset}${ANSI.dim} to download.${ANSI.reset}\n`);
       }
       return 0;
     } catch (e) {

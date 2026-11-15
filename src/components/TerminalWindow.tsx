@@ -10,6 +10,7 @@ interface TerminalWindowProps {
   tabs: TerminalTab[];
   activeTabId: string;
   settings: TerminalSettings;
+  isAndroidApp: boolean;
   isMaximized: boolean;
   onSelectTab: (tabId: string) => void;
   onNewTab: () => void;
@@ -45,6 +46,7 @@ export function TerminalWindow({
   tabs,
   activeTabId,
   settings,
+  isAndroidApp,
   isMaximized,
   onSelectTab,
   onNewTab,
@@ -122,19 +124,20 @@ export function TerminalWindow({
   return (
     <div
       style={{
-        backgroundColor: windowBg,
-        transform: isMaximized ? undefined : `translate(${dragOffset.x}px, ${dragOffset.y}px)`,
+        backgroundColor: isAndroidApp ? '#00252d' : windowBg,
+        transform: isAndroidApp || isMaximized ? undefined : `translate(${dragOffset.x}px, ${dragOffset.y}px)`,
       }}
-      className={`flex flex-col overflow-hidden backdrop-blur-2xl transition-[border-radius,box-shadow] duration-200 ${
-        isMaximized
+      className={`aqua-window flex flex-col overflow-hidden ${isAndroidApp ? 'h-full w-full rounded-none border-0 shadow-none backdrop-blur-none' : 'backdrop-blur-2xl transition-[border-radius,box-shadow] duration-200'} ${
+        isAndroidApp || isMaximized
           ? 'h-full w-full rounded-none border-0'
           : 'h-full w-full max-w-[1340px] rounded-[12px] border shadow-[0_28px_80px_-14px_rgba(0,0,0,0.82)]'
       } ${
-        isLight
+        isLight && !isAndroidApp
           ? 'border-black/15 text-slate-900'
           : 'border-white/15 text-slate-100 ring-1 ring-inset ring-white/[0.06]'
       }`}
     >
+      {!isAndroidApp && <>
       {/* macOS Titlebar */}
       <div
         onMouseDown={handleTitleMouseDown}
@@ -142,7 +145,7 @@ export function TerminalWindow({
           if (!(e.target as HTMLElement).closest('button')) onToggleMaximize();
         }}
         style={{ backgroundColor: titlebarBg }}
-        className={`flex h-9 shrink-0 items-center justify-between border-b px-3.5 ${
+        className={`aqua-titlebar flex h-9 shrink-0 items-center justify-between border-b px-3.5 ${
           isLight ? 'border-black/10' : 'border-white/10'
         }`}
       >
@@ -219,10 +222,12 @@ export function TerminalWindow({
           </button>
         </div>
       </div>
+      </>}
 
+      {(!isAndroidApp || tabs.length > 1) && <>
       {/* macOS Tab Bar */}
       <div
-        className={`flex h-8 shrink-0 items-center gap-1 border-b px-2 ${
+        className={`aqua-tabbar flex h-8 shrink-0 items-center gap-1 border-b px-2 ${
           isLight ? 'border-black/10 bg-black/[0.04]' : 'border-white/[0.08] bg-black/25'
         }`}
       >
@@ -287,6 +292,7 @@ export function TerminalWindow({
           <Plus className="h-3.5 w-3.5" />
         </button>
       </div>
+      </>}
 
       {/* Terminal Viewport(s) — keep all tabs mounted to preserve TTY state & scrollback */}
       <div className="relative min-h-0 flex-1 overflow-hidden">

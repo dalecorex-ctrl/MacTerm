@@ -44,14 +44,22 @@ export class ShellSession {
   private unloadHandler: (() => void) | null = null;
   private onTitleChange?: (title: string) => void;
   private onExitSession?: () => void;
+  private readonly nativeLocal: boolean;
+  private readonly nativeHome: string | null;
+  private nativeOutputHandler: EventListener | null = null;
+  private nativeErrorHandler: EventListener | null = null;
+  private nativeExitHandler: EventListener | null = null;
+  private nativeResizeUnsubscribe: (() => void) | null = null;
 
   constructor(opts?: { paneId?: string; onTitleChange?: (title: string) => void; onExitSession?: () => void }) {
     const ttyIdx = nextTtyIndex++;
     this.paneId = opts?.paneId;
+    this.nativeHome = window.AndroidBridge?.getLocalHomePath?.() || null;
+    this.nativeLocal = Boolean(this.nativeHome && window.AndroidBridge?.startLocalShell);
     this.tty = new TtyDevice(ttyIdx);
     vfs.registerTtyDevice(this.tty.id);
 
-    const shellProc = processManager.spawn({
+    const shellProc = this.nativeLocal ? null : processManager.spawn({
       ppid: 102,
       tty: this.tty.id,
       user: 'pogs',
@@ -63,21 +71,32 @@ export class ShellSession {
     const defaultHist = histRaw.split('\n').map((s) => s.trim()).filter(Boolean);
 
     const saved = this.paneId ? loadPersistedPaneSession(this.paneId) : null;
-    const validCwd = saved && vfs.getNode(saved.cwd)?.type === 'dir' ? saved.cwd : '/Users/pogs';
-    const validPrevCwd = saved && vfs.getNode(saved.prevCwd)?.type === 'dir' ? saved.prevCwd : validCwd;
+    const defaultHome = this.nativeHome ?? '/Users/pogs';
+    const nativeSavedCwd = saved?.cwd
+      ? window.AndroidBridge?.resolveLocalDirectory?.(saved.cwd, defaultHome) ?? ''
+      : '';
+    const validCwd = this.nativeLocal
+      ? nativeSavedCwd || defaultHome
+      : saved && vfs.getNode(saved.cwd)?.type === 'dir' ? saved.cwd : defaultHome;
+    const nativeSavedPrevCwd = saved?.prevCwd
+      ? window.AndroidBridge?.resolveLocalDirectory?.(saved.prevCwd, defaultHome) ?? ''
+      : '';
+    const validPrevCwd = this.nativeLocal
+      ? nativeSavedPrevCwd || validCwd
+      : saved && vfs.getNode(saved.prevCwd)?.type === 'dir' ? saved.prevCwd : validCwd;
     if (saved) {
       this.restoredSession = true;
     }
 
     const defaultEnv: Record<string, string> = {
-      HOME: '/Users/pogs',
-      USER: 'pogs',
-      LOGNAME: 'pogs',
-      SHELL: '/bin/zsh',
+      HOME: defaultHome,
+      USER: this.nativeLocal ? 'android' : 'pogs',
+      LOGNAME: this.nativeLocal ? 'android' : 'pogs',
+      SHELL: this.nativeLocal ? '/system/bin/sh' : '/bin/zsh',
       TERM: 'xterm-256color',
       COLORTERM: 'truecolor',
       LANG: 'en_US.UTF-8',
-      PATH: '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin',
+      PATH: this.nativeLocal ? '/system/bin:/system/xbin:/vendor/bin' : '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin',
       TTY: this.tty.path,
       PWD: validCwd,
       OLDPWD: validPrevCwd,
@@ -103,7 +122,7 @@ export class ShellSession {
       },
       history: saved && Array.isArray(saved.history) && saved.history.length > 0 ? [...saved.history] : defaultHist,
       lastExitCode: 0,
-      shellPid: shellProc.pid,
+      shellPid: shellProc?.pid ?? 0,
     };
 
     this.onTitleChange = opts?.onTitleChange;
@@ -114,10 +133,56 @@ export class ShellSession {
     window.addEventListener('beforeunload', this.unloadHandler);
     window.addEventListener('pagehide', this.unloadHandler);
 
+    if (this.nativeLocal) {
+      this.nativeOutputHandler = (event) => {
+        try {
+          const detail = JSON.parse((event as CustomEvent<string>).detail) as { sessionId: string; text: string };
+          if (detail.sessionId === this.tty.id) this.tty.write(detail.text);
+        } catch {
+          // Ignore malformed bridge events.
+        }
+      };
+      this.nativeErrorHandler = (event) => {
+        try {
+          const detail = JSON.parse((event as CustomEvent<string>).detail) as { sessionId: string; message: string };
+          if (detail.sessionId === this.tty.id) this.tty.writeln(`Unable to start local shell: ${detail.message}`);
+        } catch {
+          // Ignore malformed bridge events.
+        }
+      };
+      this.nativeExitHandler = (event) => {
+        try {
+          const detail = JSON.parse((event as CustomEvent<string>).detail) as { sessionId: string; exitCode: number };
+          if (detail.sessionId === this.tty.id) this.tty.writeln(`\r\n[local shell exited with status ${detail.exitCode}]`);
+        } catch {
+          // Ignore malformed bridge events.
+        }
+      };
+      window.addEventListener('macterm-local-shell-output', this.nativeOutputHandler);
+      window.addEventListener('macterm-local-shell-error', this.nativeErrorHandler);
+      window.addEventListener('macterm-local-shell-exit', this.nativeExitHandler);
+      this.nativeResizeUnsubscribe = this.tty.onResize((cols, rows) => {
+        window.AndroidBridge?.resizeLocalShell?.(this.tty.id, cols, rows);
+      });
+      this.tty.writeln(`${ANSI.bold}${ANSI.brightCyan}Android system shell${ANSI.reset} ${ANSI.dim}· on-device PTY · app-private home${ANSI.reset}`);
+      try {
+        window.AndroidBridge?.startLocalShell?.(
+          this.tty.id,
+          this.state.cwd,
+          JSON.stringify(this.state.env),
+          this.tty.cols,
+          this.tty.rows,
+        );
+      } catch (error) {
+        this.tty.writeln(`Unable to start local shell: ${String(error)}`);
+      }
+    } else {
+      this.printWelcome();
+      this.renderPrompt();
+    }
+
     this.persistSession();
-    this.printWelcome();
-    this.renderPrompt();
-    this.updateTitle('zsh');
+    this.updateTitle(this.nativeLocal ? 'sh' : 'zsh');
   }
 
   public persistSession(): void {
@@ -151,15 +216,24 @@ export class ShellSession {
     } else {
       this.persistSession();
     }
+    if (this.nativeLocal) {
+      window.AndroidBridge?.stopLocalShell?.(this.tty.id);
+      if (this.nativeOutputHandler) window.removeEventListener('macterm-local-shell-output', this.nativeOutputHandler);
+      if (this.nativeErrorHandler) window.removeEventListener('macterm-local-shell-error', this.nativeErrorHandler);
+      if (this.nativeExitHandler) window.removeEventListener('macterm-local-shell-exit', this.nativeExitHandler);
+      this.nativeResizeUnsubscribe?.();
+    }
     this.activeAbort?.abort();
     this.unsubTtyData?.();
-    processManager.exit(this.state.shellPid);
+    if (!this.nativeLocal) processManager.exit(this.state.shellPid);
     vfs.removeTtyDevice(this.tty.id);
   }
 
   public updateTitle(procName = 'zsh'): void {
     const shortCwd = this.formatCwd();
-    const title = `pogs@mac: ${shortCwd} — ${procName} — ${this.tty.cols}×${this.tty.rows}`;
+    const title = this.nativeLocal
+      ? `android: ${shortCwd} — ${this.tty.cols}×${this.tty.rows}`
+      : `pogs@mac: ${shortCwd} — ${procName} — ${this.tty.cols}×${this.tty.rows}`;
     this.tty.setTitle(title);
     this.onTitleChange?.(title);
   }
@@ -176,10 +250,18 @@ export class ShellSession {
   private getPromptString(): string {
     const dir = this.formatCwd();
     const exitMark = this.state.lastExitCode !== 0 ? `${ANSI.brightRed}✘ ${this.state.lastExitCode} ${ANSI.reset}` : '';
+    if (this.nativeLocal) {
+      return `${exitMark}${ANSI.bold}${ANSI.brightGreen}android${ANSI.reset} ${ANSI.bold}${ANSI.brightBlue}${dir}${ANSI.reset} ${ANSI.brightWhite}$${ANSI.reset} `;
+    }
     return `${exitMark}${ANSI.bold}${ANSI.brightGreen}pogs@mac${ANSI.reset} ${ANSI.bold}${ANSI.brightBlue}${dir}${ANSI.reset} ${ANSI.brightWhite}%${ANSI.reset} `;
   }
 
   private printWelcome(): void {
+    if (this.nativeLocal) {
+      this.tty.writeln(`${ANSI.bold}${ANSI.brightCyan}Local Android shell${ANSI.reset} ${ANSI.dim}· Linux kernel · no simulated commands${ANSI.reset}`);
+      this.tty.writeln(`${ANSI.dim}Home: ${this.nativeHome}${ANSI.reset}\r\n`);
+      return;
+    }
     const d = new Date();
     const stamp = d.toDateString().slice(0, 10) + ' ' + d.toTimeString().slice(0, 8);
     this.tty.writeln(`${ANSI.dim}Last login: ${stamp} on ${this.tty.id}${ANSI.reset}`);
@@ -211,6 +293,10 @@ export class ShellSession {
 
   public async runProgrammaticCommand(cmd: string): Promise<void> {
     if (this.isExecuting) return;
+    if (this.nativeLocal) {
+      window.AndroidBridge?.writeLocalShellInput?.(this.tty.id, `${cmd}\n`);
+      return;
+    }
     this.buffer = cmd;
     this.cursor = cmd.length;
     this.renderPrompt();
@@ -218,6 +304,11 @@ export class ShellSession {
   }
 
   private handleInput(data: string): void {
+    if (this.nativeLocal) {
+      window.AndroidBridge?.writeLocalShellInput?.(this.tty.id, data);
+      return;
+    }
+
     // If a raw-mode foreground process is running, only intercept Ctrl+C if ISIG is enabled
     if (this.isExecuting) {
       if (!this.tty.termios.icanon) {
@@ -478,10 +569,12 @@ export class ShellSession {
       return;
     }
 
-    if (this.state.history[this.state.history.length - 1] !== line) {
-      this.state.history.push(line);
+  if (this.state.history[this.state.history.length - 1] !== line) {
+    this.state.history.push(line);
+    if (!this.nativeLocal) {
       vfs.writeFile('/Users/pogs/.zsh_history', this.state.history.slice(-200).join('\n') + '\n');
     }
+  }
     this.persistSession();
 
     this.isExecuting = true;
@@ -506,11 +599,26 @@ export class ShellSession {
     }
   }
 
+  private async runNativeCommand(
+    line: string,
+    signal: AbortSignal,
+    _captureOutput: boolean,
+  ): Promise<{ exitCode: number; stdout: string }> {
+    if (signal.aborted) return { exitCode: 130, stdout: '' };
+    try {
+      window.AndroidBridge?.writeLocalShellInput?.(this.tty.id, `${line}\r`);
+      return { exitCode: 0, stdout: '' };
+    } catch (error) {
+      return { exitCode: 127, stdout: `${String(error)}\n` };
+    }
+  }
+
   public async executeCommandLine(
     line: string,
     signal: AbortSignal,
     captureOutput = false,
   ): Promise<{ exitCode: number; stdout: string }> {
+    if (this.nativeLocal) return this.runNativeCommand(line, signal, captureOutput);
     const segments = parseCommandLine(line, this.state.env, this.state.lastExitCode, this.state.cwd);
     let lastCode = 0;
     let capturedAll = '';

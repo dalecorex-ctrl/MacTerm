@@ -5,7 +5,6 @@ import {
   Smartphone,
   Terminal,
   X,
-  RefreshCw,
   ShieldCheck,
   Copy,
   Check,
@@ -45,9 +44,7 @@ export function AndroidApkModal({
 }: AndroidApkModalProps) {
   const [apkMeta, setApkMeta] = useState<ApkMetadata | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isBuilding, setIsBuilding] = useState(false);
   const [copiedCmd, setCopiedCmd] = useState<string | null>(null);
-  const [buildLogs, setBuildLogs] = useState<string | null>(null);
 
   const fetchStatus = async () => {
     setIsLoading(true);
@@ -69,29 +66,6 @@ export function AndroidApkModal({
       fetchStatus();
     }
   }, [isOpen]);
-
-  const handleBuild = async () => {
-    setIsBuilding(true);
-    setBuildLogs('Running native toolchain: javac -> dalvik-exchange -> aapt -> zipalign -> apksigner...');
-    soundEffects.tabCreate();
-    try {
-      const res = await fetch('/api/apk/build', { method: 'POST' });
-      const data = await res.json();
-      if (data.ok) {
-        soundEffects.alert();
-        setBuildLogs(data.log || 'Successfully built and signed Android APK!');
-        await fetchStatus();
-      } else {
-        soundEffects.error();
-        setBuildLogs(`Build failed:\n${data.error || 'Unknown error'}`);
-      }
-    } catch (e) {
-      soundEffects.error();
-      setBuildLogs(`Build request failed: ${e instanceof Error ? e.message : String(e)}`);
-    } finally {
-      setIsBuilding(false);
-    }
-  };
 
   const copyToClipboard = (text: string, label: string) => {
     soundEffects.bell();
@@ -163,51 +137,36 @@ export function AndroidApkModal({
                     Android Debug APK · Ready
                   </span>
                   <span className="text-[11px] font-mono text-slate-400">
-                    v1.0.0 (API 23–35)
+                    v1.0.0 (Android 8.0+)
                   </span>
                 </div>
                 <h3 className="text-base font-bold text-white tracking-tight">
-                  Pogs Terminal macOS (app-debug.apk)
+                  MacTerm (MacTerm.apk)
                 </h3>
                 <p className="text-slate-300 text-[11.5px] max-w-md">
-                  Signed with RSA 2048-bit debug key using v1 (JAR), v2 (APK Signature), and v3 schemes. Fully verified and ready to sideload.
+                  Debug-signed build produced by Gradle. Ready to sideload on Android 8.0 or newer.
+                  The APK is cached for offline download after the app has been opened online once.
                 </p>
                 <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] text-slate-400 font-mono">
                   <span>Package: <strong className="text-cyan-300 font-medium">com.pogsmac.terminal</strong></span>
                   <span>·</span>
-                  <span>Size: <strong className="text-white font-medium">{apkMeta?.sizeFormatted || '0.90 MB (918 KB)'}</strong></span>
+                  <span>Size: <strong className="text-white font-medium">{apkMeta?.sizeFormatted || 'unknown'}</strong></span>
                 </div>
               </div>
 
               {/* Action Buttons */}
               <div className="flex sm:flex-col gap-2 w-full sm:w-auto shrink-0">
                 <a
-                  href="/app-debug.apk"
-                  download="pogs-mac-terminal-debug.apk"
+                  href="/MacTerm.apk"
+                  download="MacTerm.apk"
                   onClick={() => soundEffects.tabCreate()}
                   className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-2.5 text-xs font-semibold text-slate-950 shadow-md shadow-emerald-500/20 transition-all hover:brightness-110 active:scale-95"
                 >
                   <Download className="h-4 w-4 stroke-[2.5]" />
                   Download APK
                 </a>
-                <button
-                  type="button"
-                  onClick={handleBuild}
-                  disabled={isBuilding}
-                  className="flex items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs font-medium text-slate-200 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
-                >
-                  <RefreshCw className={`h-3.5 w-3.5 ${isBuilding ? 'animate-spin text-emerald-400' : ''}`} />
-                  {isBuilding ? 'Rebuilding...' : 'Rebuild APK'}
-                </button>
               </div>
             </div>
-
-            {/* Build Log Output if active */}
-            {buildLogs && (
-              <div className="mt-4 rounded-lg border border-white/10 bg-black/60 p-3 font-mono text-[11px] text-emerald-300 max-h-36 overflow-y-auto whitespace-pre-wrap">
-                {buildLogs}
-              </div>
-            )}
           </section>
 
           {/* Quick Install Instructions */}
@@ -220,7 +179,7 @@ export function AndroidApkModal({
               </h4>
               <ol className="list-decimal list-inside space-y-1 text-slate-300 text-[11px]">
                 <li>Tap <strong className="text-white">Download APK</strong> on your Android phone.</li>
-                <li>Tap the downloaded <code className="text-cyan-300 font-mono">app-debug.apk</code> notification.</li>
+                <li>Tap the downloaded <code className="text-cyan-300 font-mono">MacTerm.apk</code> notification.</li>
                 <li>When prompted, allow <strong className="text-slate-200">"Install unknown apps"</strong> for your browser.</li>
                 <li>Tap <strong className="text-white">Install</strong> and launch Pogs Terminal!</li>
               </ol>
@@ -235,7 +194,7 @@ export function AndroidApkModal({
                 </h4>
                 <button
                   type="button"
-                  onClick={() => copyToClipboard('adb install -r app-debug.apk', 'adb')}
+                  onClick={() => copyToClipboard('adb install -r MacTerm.apk', 'adb')}
                   className="flex items-center gap-1 rounded bg-white/10 px-2 py-0.5 text-[10px] text-slate-300 hover:text-white"
                 >
                   {copiedCmd === 'adb' ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
@@ -243,7 +202,7 @@ export function AndroidApkModal({
                 </button>
               </div>
               <pre className="overflow-x-auto rounded-lg border border-white/10 bg-black/50 p-2 font-mono text-[11px] text-amber-300">
-                adb install -r app-debug.apk
+                adb install -r MacTerm.apk
               </pre>
               <p className="text-[10.5px] text-slate-400">
                 Or launch directly via ADB: <code className="text-cyan-300 font-mono">adb shell am start -n com.pogsmac.terminal/.MainActivity</code>
@@ -262,7 +221,6 @@ export function AndroidApkModal({
               <div className="flex flex-wrap gap-2 pt-1 font-mono text-[10.5px]">
                 <code className="rounded bg-black/40 px-2 py-0.5 text-cyan-300">apk info</code>
                 <code className="rounded bg-black/40 px-2 py-0.5 text-cyan-300">apk download</code>
-                <code className="rounded bg-black/40 px-2 py-0.5 text-cyan-300">apk build</code>
                 <code className="rounded bg-black/40 px-2 py-0.5 text-cyan-300">apk adb</code>
               </div>
             </div>

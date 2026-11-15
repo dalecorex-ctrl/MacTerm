@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { Plus, Settings2, TerminalSquare } from 'lucide-react';
 import type { SplitDirection, SplitNode, TerminalSettings, TerminalTab } from './types/ui';
 import { sessionRegistry } from './runtime/sessionRegistry';
 import { loadPersistedLayout, savePersistedLayout } from './runtime/sessionStorage';
@@ -6,14 +7,15 @@ import { haptics } from './runtime/haptics';
 import { soundEffects } from './runtime/audio';
 import { ANSI } from './runtime/tty';
 import { usePWAInstall } from './hooks/usePWAInstall';
-import { MacMenuBar } from './components/MacMenuBar';
-import { MacDock } from './components/MacDock';
 import { TerminalWindow } from './components/TerminalWindow';
-import { SettingsModal } from './components/SettingsModal';
-import { PackagesModal } from './components/PackagesModal';
-import { AndroidApkModal } from './components/AndroidApkModal';
-import { RepoRunnerModal } from './components/RepoRunnerModal';
 import wallpaperUrl from './assets/images/macos_desktop_wallpaper_1794665700940.jpg';
+
+const MacMenuBar = lazy(() => import('./components/MacMenuBar').then((module) => ({ default: module.MacMenuBar })));
+const MacDock = lazy(() => import('./components/MacDock').then((module) => ({ default: module.MacDock })));
+const SettingsModal = lazy(() => import('./components/SettingsModal').then((module) => ({ default: module.SettingsModal })));
+const PackagesModal = lazy(() => import('./components/PackagesModal').then((module) => ({ default: module.PackagesModal })));
+const AndroidApkModal = lazy(() => import('./components/AndroidApkModal').then((module) => ({ default: module.AndroidApkModal })));
+const RepoRunnerModal = lazy(() => import('./components/RepoRunnerModal').then((module) => ({ default: module.RepoRunnerModal })));
 
 const SETTINGS_KEY = 'macos_terminal_settings_v2';
 
@@ -118,6 +120,11 @@ export default function App() {
   const { isInstallable, isInstalled, isIOS, isOnline, install } = usePWAInstall();
 
   const resolvedActiveTabId = tabs.some((t) => t.id === activeTabId) ? activeTabId : tabs[0]?.id ?? '';
+  const isAndroidApp = Boolean(
+    window.AndroidBridge?.startLocalShell ||
+    /Android/i.test(navigator.userAgent) ||
+    new URLSearchParams(window.location.search).get('surface') === 'android',
+  );
 
   useEffect(() => {
     haptics.setEnabled(settings.hapticsEnabled !== false);
@@ -333,9 +340,9 @@ export default function App() {
   return (
     <div
       style={{ fontFamily: settings.uiFontFamily || undefined }}
-      className="relative flex h-screen w-screen flex-col overflow-hidden bg-[#0b252e]"
+      className={`relative flex h-dvh w-screen flex-col overflow-hidden ${isAndroidApp ? 'bg-[#06252c]' : 'bg-[#0b252e]'}`}
     >
-      {!wallpaperFailed ? (
+      {!isAndroidApp && (!wallpaperFailed ? (
         <img
           src={wallpaperUrl}
           alt="macOS desktop backdrop"
@@ -348,36 +355,58 @@ export default function App() {
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_#144252_0%,_#0b252e_50%,_#061318_100%)]"
         />
+      ))}
+
+      {!isAndroidApp && <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-sky-950/5" />}
+
+      {isAndroidApp ? (
+        <header className="relative z-30 flex h-12 shrink-0 items-center justify-between border-b border-white/10 bg-[#072a31] px-3 text-slate-100">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <TerminalSquare className="h-4 w-4 text-teal-300" aria-hidden="true" />
+            <span className="truncate text-[13px] font-semibold tracking-wide">MacTerm</span>
+            <span className="rounded-full border border-teal-300/20 bg-teal-300/10 px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] text-teal-200">
+              {window.AndroidBridge?.startLocalShell ? 'LOCAL SHELL' : 'PREVIEW'}
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={handleNewTab} aria-label="New terminal" title="New terminal" className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300">
+              <Plus className="h-4 w-4" aria-hidden="true" />
+            </button>
+            <button type="button" onClick={() => setSettingsOpen(true)} aria-label="Terminal settings" title="Terminal settings" className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300">
+              <Settings2 className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+        </header>
+      ) : (
+        <Suspense fallback={null}>
+          <MacMenuBar
+          onNewTab={handleNewTab}
+          onSplitHorizontal={() => handleSplit('horizontal')}
+          onSplitVertical={() => handleSplit('vertical')}
+          onClosePane={() => {
+            if (activeTab) handleClosePane(activeTab.id, activeTab.activePaneId);
+          }}
+          onClearScrollback={handleClearActive}
+          onResetTty={handleResetTty}
+          onIncreaseFont={() => updateSettings({ fontSize: Math.min(26, settings.fontSize + 1) })}
+          onDecreaseFont={() => updateSettings({ fontSize: Math.max(9, settings.fontSize - 1) })}
+          onResetFont={() => updateSettings({ fontSize: 13.5 })}
+          onToggleMaximize={() => setIsMaximized((m) => !m)}
+          onMinimizeWindow={() => setIsMinimized(true)}
+          onOpenSettings={() => setSettingsOpen(true)}
+          onOpenPackages={() => setPackagesOpen(true)}
+          onOpenAndroidApk={() => setAndroidModalOpen(true)}
+          onOpenRepoRunner={() => setRepoRunnerOpen(true)}
+          isInstallable={isInstallable && !isInstalled}
+          onInstallPwa={() => {
+            install();
+          }}
+          onRunCommand={handleRunCommand}
+          />
+        </Suspense>
       )}
 
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/20" />
-
-      <MacMenuBar
-        onNewTab={handleNewTab}
-        onSplitHorizontal={() => handleSplit('horizontal')}
-        onSplitVertical={() => handleSplit('vertical')}
-        onClosePane={() => {
-          if (activeTab) handleClosePane(activeTab.id, activeTab.activePaneId);
-        }}
-        onClearScrollback={handleClearActive}
-        onResetTty={handleResetTty}
-        onIncreaseFont={() => updateSettings({ fontSize: Math.min(26, settings.fontSize + 1) })}
-        onDecreaseFont={() => updateSettings({ fontSize: Math.max(9, settings.fontSize - 1) })}
-        onResetFont={() => updateSettings({ fontSize: 13.5 })}
-        onToggleMaximize={() => setIsMaximized((m) => !m)}
-        onMinimizeWindow={() => setIsMinimized(true)}
-        onOpenSettings={() => setSettingsOpen(true)}
-        onOpenPackages={() => setPackagesOpen(true)}
-        onOpenAndroidApk={() => setAndroidModalOpen(true)}
-        onOpenRepoRunner={() => setRepoRunnerOpen(true)}
-        isInstallable={isInstallable && !isInstalled}
-        onInstallPwa={() => {
-          install();
-        }}
-        onRunCommand={handleRunCommand}
-      />
-
-      {!isOnline && (
+      {!isOnline && !isAndroidApp && (
         <div className="relative z-30 bg-amber-600/90 px-3 py-1 text-center text-[11px] font-medium text-white">
           Offline Mode — Local TTY runtime & cached assets active
         </div>
@@ -385,7 +414,7 @@ export default function App() {
 
       <main
         className={`relative z-10 flex min-h-0 flex-1 items-center justify-center ${
-          isMaximized
+          isAndroidApp ? 'items-stretch p-0' : isMaximized
             ? 'p-0'
             : settings.showDock
               ? 'px-2 pt-2 pb-20 sm:px-6 sm:pt-4'
@@ -397,6 +426,7 @@ export default function App() {
             tabs={tabs}
             activeTabId={resolvedActiveTabId}
             settings={settings}
+            isAndroidApp={isAndroidApp}
             isMaximized={isMaximized}
             onSelectTab={setActiveTabId}
             onNewTab={handleNewTab}
@@ -428,50 +458,51 @@ export default function App() {
         )}
       </main>
 
-      {settings.showDock && !isMaximized && (
-        <MacDock
-          isWindowMinimized={isMinimized}
-          isWindowClosed={isWindowClosed}
-          onRestoreOrFocusTerminal={handleRestoreOrFocusTerminal}
-          onNewTab={handleNewTab}
-          onSplitPane={() => handleSplit('horizontal')}
-          onOpenPackages={() => setPackagesOpen(true)}
-          onOpenSettings={() => setSettingsOpen(true)}
-          onOpenRepoRunner={() => setRepoRunnerOpen(true)}
-        />
+      {!isAndroidApp && settings.showDock && !isMaximized && (
+        <Suspense fallback={null}>
+          <MacDock
+            isWindowMinimized={isMinimized}
+            isWindowClosed={isWindowClosed}
+            onRestoreOrFocusTerminal={handleRestoreOrFocusTerminal}
+            onNewTab={handleNewTab}
+            onSplitPane={() => handleSplit('horizontal')}
+            onOpenPackages={() => setPackagesOpen(true)}
+            onOpenSettings={() => setSettingsOpen(true)}
+            onOpenRepoRunner={() => setRepoRunnerOpen(true)}
+          />
+        </Suspense>
       )}
 
-      <SettingsModal
-        isOpen={settingsOpen}
-        settings={settings}
-        onUpdate={updateSettings}
-        onClose={() => setSettingsOpen(false)}
-      />
-
-      <PackagesModal
-        isOpen={packagesOpen}
-        onClose={() => setPackagesOpen(false)}
-        onRunCommand={handleRunCommand}
-      />
-
-      <AndroidApkModal
-        isOpen={androidModalOpen}
-        isInstallable={isInstallable}
-        isInstalled={isInstalled}
-        isIOS={isIOS}
-        onInstallPwa={() => {
-          install();
-        }}
-        onClose={() => setAndroidModalOpen(false)}
-      />
-
-      <RepoRunnerModal
-        isOpen={repoRunnerOpen}
-        onClose={() => setRepoRunnerOpen(false)}
-        onRunCommand={handleRunCommand}
-        cwd={getActiveSession()?.state.cwd ?? '/Users/pogs'}
-        home={getActiveSession()?.state.env.HOME ?? '/Users/pogs'}
-      />
+      <Suspense fallback={null}>
+        {settingsOpen && (
+          <SettingsModal
+            isOpen
+            settings={settings}
+            onUpdate={updateSettings}
+            onClose={() => setSettingsOpen(false)}
+          />
+        )}
+        {packagesOpen && <PackagesModal isOpen onClose={() => setPackagesOpen(false)} onRunCommand={handleRunCommand} />}
+        {androidModalOpen && (
+          <AndroidApkModal
+            isOpen
+            isInstallable={isInstallable}
+            isInstalled={isInstalled}
+            isIOS={isIOS}
+            onInstallPwa={install}
+            onClose={() => setAndroidModalOpen(false)}
+          />
+        )}
+        {repoRunnerOpen && (
+          <RepoRunnerModal
+            isOpen
+            onClose={() => setRepoRunnerOpen(false)}
+            onRunCommand={handleRunCommand}
+            cwd={getActiveSession()?.state.cwd ?? '/Users/pogs'}
+            home={getActiveSession()?.state.env.HOME ?? '/Users/pogs'}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }
