@@ -38,7 +38,7 @@ public final class LocalPtySession {
     ) throws Exception {
         this.listener = listener;
         int[] pid = new int[1];
-        masterFd = JNI.createSubprocess(shellPath, cwd, args, environment, pid, rows, columns, 0, 0);
+        masterFd = JNI.createSubprocess(shellPath, cwd, args, environment, pid, rows, columns);
         processId = pid[0];
         if (masterFd < 0 || processId <= 0) {
             throw new IOException("Unable to create the local terminal process");
@@ -63,7 +63,7 @@ public final class LocalPtySession {
     public void resize(int columns, int rows) {
         if (closed.get()) return;
         try {
-            JNI.setPtyWindowSize(masterFd, rows, columns, 0, 0);
+            JNI.setPtyWindowSize(masterFd, rows, columns);
         } catch (Exception ignored) {
         }
     }
