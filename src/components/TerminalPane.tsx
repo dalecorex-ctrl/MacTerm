@@ -228,9 +228,17 @@ export function TerminalPane({
         return false;
       }
       if (isMod && ev.key.toLowerCase() === 'v') {
-        navigator.clipboard?.readText().then((txt) => {
-          if (txt) session.tty.emitInput(txt);
-        }).catch(() => {});
+        const pasteFromClipboard = async () => {
+          try {
+            const txt = window.AndroidBridge?.readClipboardText
+              ? window.AndroidBridge.readClipboardText()
+              : await navigator.clipboard?.readText();
+            if (txt) session.tty.emitInput(txt);
+          } catch {
+            showCopyToast('Clipboard paste blocked by browser');
+          }
+        };
+        void pasteFromClipboard();
         return false;
       }
       return true;
@@ -473,10 +481,14 @@ export function TerminalPane({
     const session = sessionRegistry.get(paneId);
     if (!session) return;
     try {
-      const txt = await navigator.clipboard?.readText();
+      const txt = window.AndroidBridge?.readClipboardText
+        ? window.AndroidBridge.readClipboardText()
+        : await navigator.clipboard?.readText();
       if (txt) {
         session.tty.emitInput(txt);
         termRef.current?.focus();
+      } else {
+        showCopyToast('Clipboard is empty');
       }
     } catch {
       showCopyToast('Clipboard paste blocked by browser');

@@ -366,6 +366,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         @JavascriptInterface
+        fun readClipboardText(): String {
+            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            if (!clipboard.hasPrimaryClip()) return ""
+            return clipboard.primaryClip?.getItemAt(0)?.coerceToText(context)?.toString().orEmpty()
+        }
+
+        @JavascriptInterface
         fun hapticTap() {
             hapticFeedback("tap")
         }

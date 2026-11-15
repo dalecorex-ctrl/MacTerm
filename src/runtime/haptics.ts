@@ -4,6 +4,7 @@ declare global {
   interface Window {
     AndroidBridge?: {
       copyText?: (text: string) => void;
+      readClipboardText?: () => string;
       hapticTap?: () => void;
       hapticFeedback?: (kind: string) => void;
       isRootAvailable?: () => boolean;
