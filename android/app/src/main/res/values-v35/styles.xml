@@ -1,0 +1,9 @@
+<resources>
+    <!-- Android 15 forces edge-to-edge for targetSdk 35; opt out so the terminal is not drawn under the system bars. -->
+    <style name="Theme.PogsMacTerminal" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@color/bg_dark</item>
+        <item name="android:statusBarColor">@color/bg_dark</item>
+        <item name="android:navigationBarColor">@color/bg_dark</item>
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
+    </style>
+</resources>
